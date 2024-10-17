@@ -18,7 +18,7 @@ def accuracy(y_label: np.ndarray, y_pred: np.ndarray) -> float:
     :param y_pred: Valeurs prédites par le modèle (np.ndarray)
     :return: Accuracy (float)
     """
-    return np.mean(y_label == y_pred)
+    return np.mean(y_label == y_pred).item()
 
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
@@ -67,10 +67,13 @@ class LinearClassification:
             # Prédiction du modèle
             y_predicted = sigmoid(self.logits(inputs))
 
-            # Calcul du gradient (Qui correspond à l'impact de chaque paramètre sur la fonction de coût)
-            dw = (1 / n_samples) * np.dot(inputs.T, (y_predicted - labels))
+            # Calcul de l'erreur (Fonction de coût)
+            error = y_predicted - labels
 
-            # Calcul du biais (Qui correspond à l'impact du biais sur la fonction de coût)
+            # Calcul du gradient (Qui correspond à l'impact de chaque paramètre sur la fonction de coût)
+            dw = (1 / n_samples) * np.dot(inputs.T, error)
+
+            # Calcul du biais (Qui correspond à l'impact du biais sur
             db = (1 / n_samples) * np.sum(y_predicted - labels)
 
             # Mise à jour des paramètres
