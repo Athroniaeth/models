@@ -96,15 +96,25 @@ class LinearClassification:
         :param inputs: Les valeurs d'entrée pour lesquelles nous voulons prédire les classes
         :return: Classes prédites (np.ndarray)
         """
-        y_predicted = sigmoid(self.logits(inputs))  # Transforme les logits en probabilités
-        y_predicted_cls = [1 if i > 0.5 else 0 for i in y_predicted]  # Transforme les probabilités en classes
+        y_predicted = sigmoid(
+            self.logits(inputs)
+        )  # Transforme les logits en probabilités
+        y_predicted_cls = [
+            1 if i > 0.5 else 0 for i in y_predicted
+        ]  # Transforme les probabilités en classes
         return np.array(y_predicted_cls)
 
 
 if __name__ == "__main__":
     # Fonction de scikit-learn pour générer un dataset de classification
     inputs, y = datasets.make_classification(
-        n_samples=100, n_features=2, n_classes=2, n_clusters_per_class=1, n_informative=2, n_redundant=0, random_state=42
+        n_samples=100,
+        n_features=2,
+        n_classes=2,
+        n_clusters_per_class=1,
+        n_informative=2,
+        n_redundant=0,
+        random_state=42,
     )
 
     # Diviser le dataset en données d'entraînement et de test
@@ -132,7 +142,7 @@ if __name__ == "__main__":
     m2 = plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap=cmap, s=10, alpha=0.6)
     x0, x1 = np.meshgrid(
         np.linspace(inputs[:, 0].min(), inputs[:, 0].max(), 100),
-        np.linspace(inputs[:, 1].min(), inputs[:, 1].max(), 100)
+        np.linspace(inputs[:, 1].min(), inputs[:, 1].max(), 100),
     )
     x_new = np.c_[x0.ravel(), x1.ravel()]
     y_pred_line = classifier.predict(x_new)

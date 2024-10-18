@@ -14,13 +14,17 @@ def r2_score(y_label: np.ndarray, y_pred: np.ndarray) -> float:
     Un score R^2 de 1.0 indique que le modèle explique parfaitement les données, tandis qu'un score de 0.0
     signifie que le modèle n'explique pas mieux que la moyenne des valeurs réelles.
 
-    En élevant les erreurs au carré, nous :
-    - Rendons les erreurs négatives positives (par exemple, -1² devient 1)
-    - Amplifions les grandes erreurs (1² = 1, 2² = 4, 3² = 9...)
+    Notes:
+        En élevant les erreurs au carré, nous :
+        - Rendons les erreurs négatives positives (par exemple, -1² devient 1)
+        - Amplifions les grandes erreurs (1² = 1, 2² = 4, 3² = 9...)
 
-    :param y_label: Valeurs réelles du dataset (np.ndarray)
-    :param y_pred: Valeurs prédites par le modèle (np.ndarray)
-    :return: Score R^2 (float)
+    Args
+        y_label (np.ndarray): Valeurs réelle du dataset
+        y_pred (np.ndarray): Valeurs prédites par le modèle
+
+    Returns
+        Score R^2 (float)
     """
 
     # Calcul de la somme des erreurs au carré (résidus)
@@ -29,11 +33,11 @@ def r2_score(y_label: np.ndarray, y_pred: np.ndarray) -> float:
     residual_sum_squares = np.sum((y_label - y_pred) ** 2)
 
     # Calcul de la somme des carrés totaux (variance totale)
-    # Cela représente la variance des valeurs du dataset par rapport à sa moyenne
+    # Cela représente la variance des valeurs du dataset par rapport à sa moyenne.
     # Nous mesurons à partir du dataset, le score maximal que nous pouvons obtenir avec notre modèle
     total_sum_squares = np.sum((y_label - np.mean(y_label)) ** 2)
 
-    # Calcul du score R^2
+    # Calcul du score R^2.
     # Nous mesurons le % de variance expliquée par notre modèle
     # Remarque: nous faisons "1 - (rss/tss)" car "rss" est une erreur. Plus il est petit, mieux c'est.
     score = 1 - (residual_sum_squares / total_sum_squares)
@@ -49,15 +53,19 @@ def mean_squared_error(y_label: np.ndarray, y_pred: np.ndarray) -> float:
     des différences entre les valeurs réelles et les valeurs prédites. Plus l'erreur quadratique moyenne est faible,
     meilleur est le modèle.
 
-    En élevant les erreurs au carré, nous :
-    - Rendons les erreurs négatives positives (par exemple, -1² devient 1)
-    - Amplifions les grandes erreurs (1² = 1, 2² = 4, 3² = 9...)
+    Notes:
+        En élevant les erreurs au carré, nous :
+        - Rendons les erreurs négatives positives (par exemple, -1² devient 1)
+        - Amplifions les grandes erreurs (1² = 1, 2² = 4, 3² = 9...)
 
-    :param y_label: Valeurs réelles du dataset (np.ndarray)
-    :param y_pred: Valeurs prédites par le modèle (np.ndarray)
-    :return: Erreur quadratique moyenne (float)
+    Args:
+        y_label (np.ndarray): Valeurs réelles du dataset
+        y_pred (np.ndarray): Valeurs prédites par le modèle (np.ndarray)
+
+    Returns:
+        Erreur quadratique moyenne (float)
     """
-    return np.mean((y_label - y_pred) ** 2)
+    return np.mean((y_label - y_pred) ** 2).item()
 
 
 @dataclass
@@ -76,9 +84,9 @@ class LinearRegression:
         la fonction de coût par rapport aux paramètres du modèle, puis ajuste les paramètres dans la direction qui
         minimise la fonction de coût.
 
-        :param inputs: Les valeurs d'entrée du dataset (np.ndarray)
-        :param labels: Les valeurs cibles du dataset (np.ndarray)
-        :return: None
+        Args:
+            inputs (np.ndarray): Les valeurs d'entrée du dataset
+            labels (np.ndarray): Les valeurs cibles du dataset
         """
         # Nombre de features est toujours égale à 1
         n_samples, n_features = inputs.shape
@@ -111,8 +119,8 @@ class LinearRegression:
         - shape (100,1) * shape (2,) Error,
         - shape (100,2) * shape (1,) Error
 
-        :param inputs: Les valeurs d'entrée pour lesquelles nous voulons prédire les valeurs de y
-        :return:
+        Args:
+            inputs (np.ndarray): Les valeurs d'entrée pour lesquelles nous voulons prédire les valeurs de y
         """
         y_predicted = np.dot(inputs, self.weights) + self.bias
         return y_predicted
