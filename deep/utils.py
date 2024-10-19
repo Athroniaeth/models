@@ -1,21 +1,24 @@
+import contextlib
 from typing import Callable
 
 import torch
 import torch.nn as nn
+from torch import optim
 from torch.utils.data import DataLoader, random_split
 from torchmetrics import Metric
+from tqdm import tqdm
 
 
 def split_dataset(
-    dataset,
-    transform: Callable,
-    shuffle: bool,
-    download: bool,
-    batch_size: int,
-    batch_size_acc: int,
-    train_size: float = 0.6,
-    test_size: float = 0.2,
-    val_size: float = 0.2,
+        dataset,
+        transform: Callable,
+        shuffle: bool,
+        download: bool,
+        batch_size: int,
+        batch_size_acc: int,
+        train_size: float = 0.6,
+        test_size: float = 0.2,
+        val_size: float = 0.2,
 ):
     """
     Split dataset into training, validation and test sets
@@ -85,3 +88,66 @@ def check_accuracy(loader: DataLoader, model: nn.Module, metrics: Metric):
 
     model.train()  # Set model back to train mode
     return acc / len(loader)
+
+
+def train(
+        model: nn.Module,
+        train_loader: DataLoader,
+        test_loader: DataLoader,
+        val_loader: DataLoader,
+        num_epochs: int,
+        metrics: Metric,
+        criterion: nn.Module,
+        optimizer: optim.Optimizer,
+):
+    """
+    Complete function to train a model
+
+    Args:
+        model (nn.Module): Model to train
+        train_loader (DataLoader): DataLoader for training data
+        test_loader (DataLoader): DataLoader for test data
+        val_loader (DataLoader): DataLoader for validation data
+        num_epochs (int): Number of epochs to train
+        metrics (Metric): Metric to use for accuracy
+        criterion (nn.Module): Loss function
+        optimizer (optim.Optimizer): Optimizer to use for training
+
+    Returns:
+        float: Accuracy of the model on the test data
+    """
+    # Get device of model
+    device = next(model.parameters()).device
+
+    # Allow interruption of training
+    with contextlib.suppress(KeyboardInterrupt):
+        for epoch in range(num_epochs):
+            total_accuracy = 0
+            pbar = tqdm(train_loader, total=len(train_loader), desc=f"Epoch {epoch + 1}/{num_epochs}")
+
+            for batch_idx, (data, targets) in enumerate(pbar):
+                # Get data to cuda if possible
+                data = data.to(device=device)
+                targets = targets.to(device=device)
+
+                # Forward step
+                scores = model(data)
+                acc = metrics(scores, targets)
+                loss = criterion(scores, targets)
+
+                # Backward step
+                optimizer.zero_grad()
+                loss.backward()
+
+                # Gradient descent or Adam step
+                optimizer.step()
+                total_accuracy += acc
+
+            # Check test accuracy after each epoch
+            train_acc = total_accuracy / len(train_loader)
+            test_acc = check_accuracy(test_loader, model, metrics)
+            pbar.write(f"Epoch {epoch}, Train: {train_acc * 100:.2f}%, Test: {test_acc * 100:.2f}%")
+
+    # Check validation accuracy after training
+    val_acc = check_accuracy(val_loader, model, metrics)
+    pbar.write(f"Validation accuracy: {val_acc * 100:.2f}%")
