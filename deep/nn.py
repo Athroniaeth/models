@@ -7,7 +7,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torchmetrics.classification import Accuracy
 
-from deep.utils import split_dataset, train
+from deep.utils import split_dataset, train, get_full_dataset
 
 
 class NN(nn.Module):
@@ -45,14 +45,15 @@ num_epochs = 15
 random.seed(seed)
 torch.manual_seed(seed)
 
+# Get full dataset (train and test)
+dataset = get_full_dataset(datasets.MNIST, transform=transforms.ToTensor(), download=True)
+
 # Load Data
 train_loader, test_loader, val_loader = split_dataset(
-    datasets.MNIST,
-    transform=transforms.ToTensor(),
+    dataset,
     batch_size=batch_size,
     batch_size_acc=4096,
     shuffle=True,
-    download=True,
 )
 
 # Initialize network

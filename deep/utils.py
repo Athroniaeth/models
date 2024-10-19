@@ -9,11 +9,35 @@ from torchmetrics import Metric
 from tqdm import tqdm
 
 
-def split_dataset(
-        dataset,
+def get_full_dataset(
+        dataset: Callable,
         transform: Callable,
-        shuffle: bool,
         download: bool,
+):
+    """
+    Get full dataset with both training and test data
+
+    Args:
+        dataset (Callable): Dataset to download
+        transform (Callable): Transformation to apply to the dataset
+        download (bool): Download the dataset
+
+    Returns:
+        torch.utils.data.ConcatDataset: Full dataset with both training and test data
+    """
+    # Download datasets via API
+    train_dataset = dataset(root="dataset/", train=True, transform=transform, download=download)
+    test_dataset = dataset(root="dataset/", train=False, transform=transform, download=download)
+
+    # Merging training and test datasets
+    full_dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
+
+    return full_dataset
+
+
+def split_dataset(
+        full_dataset,
+        shuffle: bool,
         batch_size: int,
         batch_size_acc: int,
         train_size: float = 0.6,
@@ -24,10 +48,8 @@ def split_dataset(
     Split dataset into training, validation and test sets
 
     Args:
-        dataset (Datasets): Dataset to split
-        transform (Callable): Transform to apply to the dataset
+        full_dataset (Datasets): Dataset to split
         shuffle (bool): Shuffle the dataset
-        download (bool): Download the dataset
         batch_size (int): Batch size for training
         batch_size_acc (int): Batch size for accuracy
         train_size (float): Size of the training set
@@ -37,13 +59,6 @@ def split_dataset(
     Returns:
         tuple: Training, validation and test DataLoaders
     """
-    # Download datasets via API
-    train_dataset = dataset(root="dataset/", train=True, transform=transform, download=download)
-    test_dataset = dataset(root="dataset/", train=False, transform=transform, download=download)
-
-    # Merging training and test datasets
-    full_dataset = torch.utils.data.ConcatDataset([train_dataset, test_dataset])
-
     # Define partition sizes of the dataset
     length = len(full_dataset)
     train_size = int(train_size * length)
