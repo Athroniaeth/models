@@ -32,11 +32,13 @@ class NN(nn.Module):
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {device}")
 
+# Model parameters
+input_size = 28 * 28
+hidden_size = 128
+num_classes = 10
+
 # Hyperparameters
 seed = 42
-input_size = 28 * 28
-hidden_size = 5
-num_classes = 10
 learning_rate = 1e-3
 batch_size = 256
 num_epochs = 15

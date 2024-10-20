@@ -74,7 +74,7 @@ class AEDataset(Dataset):
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {device}")
 
-# Model hyperparameters
+# Model parameters
 input_size = 28 * 28
 hidden_size = 784
 
