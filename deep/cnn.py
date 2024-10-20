@@ -7,7 +7,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torchmetrics.classification import Accuracy
 
-from deep.utils import split_dataset, train, get_full_dataset
+from deep.utils import split_dataset, train, get_full_dataset, plot_accuracy
 
 
 class CNN(nn.Module):
@@ -59,7 +59,7 @@ seed = 42
 input_size = 28 * 28
 hidden_size = 5
 num_classes = 10
-learning_rate = 5e-3
+learning_rate = 1e-3
 batch_size = 256
 num_epochs = 15
 
@@ -74,7 +74,7 @@ dataset = get_full_dataset(datasets.MNIST, transform=transforms.ToTensor(), down
 train_loader, test_loader, val_loader = split_dataset(
     dataset,
     batch_size=batch_size,
-    batch_size_acc=4096,
+    batch_size_acc=8192,
     shuffle=True,
 )
 
@@ -87,7 +87,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Train Network
-train(
+list_train_acc, list_test_acc = train(
     model=model,
     train_loader=train_loader,
     test_loader=test_loader,
@@ -97,3 +97,6 @@ train(
     criterion=criterion,
     optimizer=optimizer,
 )
+
+# Plot the accuracy (torchmetrics)
+plot_accuracy(list_train_acc, list_test_acc)

@@ -1,6 +1,8 @@
 import contextlib
-from typing import Callable
+from typing import Callable, List
 
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
 from torch import optim
@@ -131,6 +133,9 @@ def train(
     Returns:
         float: Accuracy of the model on the test data
     """
+    list_train_acc = []
+    list_test_acc = []
+
     # Get device of model
     device = next(model.parameters()).device
 
@@ -161,8 +166,59 @@ def train(
             # Check test accuracy after each epoch
             train_acc = total_accuracy / len(train_loader)
             test_acc = check_accuracy(test_loader, model, metrics)
+
+            # Update progress bar
             pbar.write(f"Epoch {epoch}, Train: {train_acc * 100:.2f}%, Test: {test_acc * 100:.2f}%")
+
+            # Save accuracy for each epoch
+            list_train_acc.append(train_acc)
+            list_test_acc.append(test_acc)
 
     # Check validation accuracy after training
     val_acc = check_accuracy(val_loader, model, metrics)
     pbar.write(f"Validation accuracy: {val_acc * 100:.2f}%")
+
+    return list_train_acc, list_test_acc
+
+
+def plot_accuracy(train_acc_list: List[torch.Tensor], test_acc_list: List[torch.Tensor]):
+    """
+    Plot the training and testing accuracy over epochs.
+
+    Plots the training and testing accuracy over epochs
+    on a single graph. Epoch numbers will be displayed
+    as integers. The function will display the plot.
+
+    Parameters:
+        train_acc_list (List[torch.Tensor]): List of training accuracy values for each epoch.
+        test_acc_list (List[torch.Tensor]): List of testing accuracy values for each epoch.
+
+    """
+
+    # Convert the tensors to numpy arrays (move to CPU first if on GPU)
+    train_acc_cpu = [acc.cpu().numpy() for acc in train_acc_list]
+    test_acc_cpu = [acc.cpu().numpy() for acc in test_acc_list]
+
+    # Create the plot
+    plt.figure(figsize=(10, 6))
+
+    # Plot training accuracy
+    plt.plot(train_acc_cpu, label="Training Accuracy", color='orange')
+
+    # Plot testing accuracy
+    plt.plot(test_acc_cpu, label="Testing Accuracy", color='blue')
+
+    # Add labels and title
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
+    plt.title("Training and Testing Accuracy Over Epochs")
+
+    # Set the ticks on the x-axis to be integers (epochs)
+    epochs = np.arange(1, len(train_acc_cpu))  # Create an array of epochs (1, 2, ..., N)
+    plt.xticks(epochs)  # Force x-axis ticks to be integers
+
+    # Show legend
+    plt.legend()
+
+    # Display the plot
+    plt.show()

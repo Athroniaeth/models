@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from deep.utils import split_dataset, train, get_full_dataset
+from deep.utils import split_dataset, train, get_full_dataset, plot_accuracy
 
 
 class AutoEncoder(nn.Module):
@@ -81,7 +81,7 @@ hidden_size = 784
 # Hyperparameters
 seed = 42
 learning_rate = 1e-3
-batch_size = 128
+batch_size = 256
 num_epochs = 15
 
 # Set seed
@@ -96,7 +96,7 @@ full_dataset = AEDataset(full_dataset)
 train_loader, test_loader, val_loader = split_dataset(
     full_dataset=full_dataset,
     batch_size=batch_size,
-    batch_size_acc=4096,
+    batch_size_acc=8192,
     shuffle=True,
 )
 
@@ -123,7 +123,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 # Train Network
-train(
+list_train_acc, list_test_acc = train(
     model=model,
     train_loader=train_loader,
     test_loader=test_loader,
@@ -133,6 +133,9 @@ train(
     criterion=criterion,
     optimizer=optimizer,
 )
+
+# Plot the accuracy (torchmetrics)
+plot_accuracy(list_train_acc, list_test_acc)
 
 # Show the first image and its reconstruction
 import matplotlib.pyplot as plt
