@@ -24,7 +24,7 @@ class RNN(nn.Module):
         self.num_layers = num_layers
 
         self.rnn = nn.RNN(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size*sequence_length, num_classes)
+        self.fc = nn.Linear(hidden_size * sequence_length, num_classes)
 
     def forward(self, x):
         # Remove channel dimension
@@ -47,8 +47,9 @@ print(f"Device: {device}")
 # Model parameters
 input_size = 28
 num_layers = 2
-hidden_size = 256
+hidden_size = 64
 num_classes = 10
+sequence_length = 28
 
 # Hyperparameters
 seed = 42
@@ -72,7 +73,13 @@ train_loader, test_loader, val_loader = split_dataset(
 )
 
 # Initialize network
-model = RNN(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, num_classes=num_classes).to(device)
+model = RNN(
+    input_size=input_size,
+    hidden_size=hidden_size,
+    num_layers=num_layers,
+    num_classes=num_classes,
+    sequence_length=sequence_length
+).to(device)
 
 # Loss and optimizer
 metrics = Accuracy(task="multiclass", num_classes=num_classes).to(device)
