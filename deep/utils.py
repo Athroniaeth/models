@@ -199,6 +199,10 @@ def plot_accuracy(train_acc_list: List[torch.Tensor], test_acc_list: List[torch.
     train_acc_cpu = [acc.detach().cpu().numpy() for acc in train_acc_list]
     test_acc_cpu = [acc.detach().cpu().numpy() for acc in test_acc_list]
 
+    # Insert 0 at the beginning of the lists for better visualization
+    train_acc_cpu.insert(0, 0)
+    test_acc_cpu.insert(0, 0)
+
     # Create the plot
     plt.figure(figsize=(10, 6))
 
@@ -214,8 +218,11 @@ def plot_accuracy(train_acc_list: List[torch.Tensor], test_acc_list: List[torch.
     plt.title("Training and Testing Accuracy Over Epochs")
 
     # Set the ticks on the x-axis to be integers (epochs)
-    epochs = np.arange(1, len(train_acc_cpu))  # Create an array of epochs (1, 2, ..., N)
+    epochs = np.arange(0, len(train_acc_cpu) + 1)  # Create an array of epochs (1, 2, ..., N)
     plt.xticks(epochs)  # Force x-axis ticks to be integers
+
+    # Set the y-axis scale to always range from 0 to 1
+    plt.ylim(0, 1)
 
     # Show legend
     plt.legend()
