@@ -196,8 +196,8 @@ def plot_accuracy(train_acc_list: List[torch.Tensor], test_acc_list: List[torch.
     """
 
     # Convert the tensors to numpy arrays (move to CPU first if on GPU)
-    train_acc_cpu = [acc.cpu().numpy() for acc in train_acc_list]
-    test_acc_cpu = [acc.cpu().numpy() for acc in test_acc_list]
+    train_acc_cpu = [acc.detach().cpu().numpy() for acc in train_acc_list]
+    test_acc_cpu = [acc.detach().cpu().numpy() for acc in test_acc_list]
 
     # Create the plot
     plt.figure(figsize=(10, 6))
