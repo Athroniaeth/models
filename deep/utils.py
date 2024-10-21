@@ -1,4 +1,5 @@
 import contextlib
+import statistics
 from typing import Callable, List
 
 import matplotlib.pyplot as plt
@@ -116,6 +117,8 @@ def train(
         metrics: Metric,
         criterion: nn.Module,
         optimizer: optim.Optimizer,
+        callbacks_batch: List[Callable] = None,
+        callbacks_epoch: List[Callable] = None,
 ):
     """
     Complete function to train a model
@@ -129,21 +132,26 @@ def train(
         metrics (Metric): Metric to use for accuracy
         criterion (nn.Module): Loss function
         optimizer (optim.Optimizer): Optimizer to use for training
+        callbacks_batch (List[Callable]): List of callbacks to run after each batch
+        callbacks_epoch (List[Callable]): List of callbacks to run after each epoch
 
     Returns:
         float: Accuracy of the model on the test data
     """
-    list_train_acc = []
-    list_test_acc = []
+    batch_size = train_loader.batch_size
+    run_train_acc = []
+    run_test_acc = []
 
     # Get device of model
     device = next(model.parameters()).device
 
     # Allow interruption of training
     with contextlib.suppress(KeyboardInterrupt):
-        for epoch in range(num_epochs):
-            total_accuracy = 0
-            pbar = tqdm(train_loader, total=len(train_loader), desc=f"Epoch {epoch + 1}/{num_epochs}")
+        for epoch in range(1, num_epochs + 1):
+            batch_acc = []
+            batch_loss = []
+
+            pbar = tqdm(train_loader, total=len(train_loader), desc=f"Epoch {epoch}/{num_epochs}")
 
             for batch_idx, (data, targets) in enumerate(pbar):
                 # Get data to cuda if possible
@@ -161,24 +169,55 @@ def train(
 
                 # Gradient descent or Adam step
                 optimizer.step()
-                total_accuracy += acc
+
+                # Append loss and accuracy
+                batch_acc.append(acc)
+                batch_loss.append(loss)
+
+                # Calcul by batch_idx and batch_size and epoch
+                step = (epoch - 1) * len(train_loader) + batch_idx
+
+                # Rescale step (not same with batch_size) like min batch_size is 256
+                step = batch_size // 256 * step
+
+                # Run callbacks
+                if callbacks_batch:
+                    for callback in callbacks_batch:
+                        callback(
+                            acc=acc,
+                            loss=loss,
+                            step=step,
+                        )
+
+                pbar.set_postfix(acc=acc.item(), loss=loss.item(), step=step)
 
             # Check test accuracy after each epoch
-            train_acc = total_accuracy / len(train_loader)
-            test_acc = check_accuracy(test_loader, model, metrics)
+            epoch_train_acc = sum(batch_acc) / len(batch_acc)
+            epoch_test_acc = check_accuracy(test_loader, model, metrics)
+            epoch_loss = sum(batch_loss) / len(batch_loss)
 
             # Update progress bar
-            pbar.write(f"Epoch {epoch}, Train: {train_acc * 100:.2f}%, Test: {test_acc * 100:.2f}%")
+            pbar.write(f"Epoch {epoch}, Train: {epoch_train_acc * 100:.2f}%, Test: {epoch_test_acc * 100:.2f}%")
+
+            # Run callbacks
+            if callbacks_epoch:
+                for callback in callbacks_epoch:
+                    callback(
+                        epoch=epoch,
+                        epoch_train_acc=epoch_train_acc,
+                        epoch_test_acc=epoch_test_acc,
+                        epoch_loss=epoch_loss,
+                    )
 
             # Save accuracy for each epoch
-            list_train_acc.append(train_acc)
-            list_test_acc.append(test_acc)
+            run_train_acc.append(epoch_train_acc)
+            run_test_acc.append(epoch_test_acc)
 
     # Check validation accuracy after training
     val_acc = check_accuracy(val_loader, model, metrics)
     pbar.write(f"Validation accuracy: {val_acc * 100:.2f}%")
 
-    return list_train_acc, list_test_acc
+    return run_train_acc, run_test_acc
 
 
 def plot_accuracy(train_acc_list: List[torch.Tensor], test_acc_list: List[torch.Tensor]):
@@ -194,7 +233,6 @@ def plot_accuracy(train_acc_list: List[torch.Tensor], test_acc_list: List[torch.
         test_acc_list (List[torch.Tensor]): List of testing accuracy values for each epoch.
 
     """
-
     # Convert the tensors to numpy arrays (move to CPU first if on GPU)
     train_acc_cpu = [acc.detach().cpu().numpy() for acc in train_acc_list]
     test_acc_cpu = [acc.detach().cpu().numpy() for acc in test_acc_list]
