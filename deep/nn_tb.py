@@ -1,13 +1,12 @@
 import itertools
 import random
-from functools import partial
 
+import mlflow
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
-from torch.utils.tensorboard import SummaryWriter
 from torchmetrics.classification import Accuracy
 
 from deep.utils import split_dataset, get_full_dataset, train, plot_accuracy
@@ -31,64 +30,32 @@ class NN(nn.Module):
         return out
 
 
-def callback_batch_save(
-        step: int,
-        acc: torch.Tensor,
-        loss: torch.Tensor,
-        writer: SummaryWriter
-):
-    writer.add_scalar("Loss", loss, global_step=step)
-    writer.add_scalar("Accuracy", acc, global_step=step)
-
-
-def callback_epoch_save(
-        epoch: int,
-        epoch_train_acc: torch.Tensor,
-        epoch_test_acc: torch.Tensor,
-        epoch_loss: torch.Tensor,
-        lr: float,
-        batch_size: int,
-        writer: SummaryWriter
-):
-    writer.add_hparams(
-        {
-            "lr": lr,
-            "bsize": batch_size
-        },
-        {
-            f"hparams/train_acc": epoch_train_acc.item(),
-            f"hparams/test_acc": epoch_test_acc.item(),
-            f"hparams/loss": epoch_loss.item(),
-        },
-    )
-
-
 # Set device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {device}")
 
 # Model parameters
 input_size = 28 * 28
-hidden_size = 128
+hidden_size = 8
 num_classes = 10
 
 # Hyperparameters
 seed = 42
-num_epochs = 2
+num_epochs = 5
 
 # Set seed
 random.seed(seed)
 torch.manual_seed(seed)
 
 # Test this hyperparameters
-batch_sizes = [256, 512] #, 1024, 2048, 4096]
-learning_rates = [5e-2, 1e-2, 5e-3,]# 1e-3, 5e-4, 1e-4]
+batch_sizes = [256, 512, 1024]
+learning_rates = [1e-2, 1e-3, 1e-4]
 
 generator = itertools.product(batch_sizes, learning_rates, repeat=1)
 
-for batch_size, learning_rate in generator:
-    writer = SummaryWriter(f"runs/MNIST/Batch_{batch_size}_LR_{learning_rate}")
+mlflow.set_experiment("/neural_networks_mnist")
 
+for batch_size, learning_rate in generator:
     # Get full dataset (train and test)
     dataset = get_full_dataset(datasets.MNIST, transform=transforms.ToTensor(), download=True)
 
@@ -108,19 +75,15 @@ for batch_size, learning_rate in generator:
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # Train Network (with tensorboard)
-    list_train_acc, list_test_acc = train(
-        model=model,
-        train_loader=train_loader,
-        test_loader=test_loader,
-        val_loader=val_loader,
-        num_epochs=num_epochs,
-        metrics=metrics,
-        criterion=criterion,
-        optimizer=optimizer,
-        callbacks_batch=[partial(callback_batch_save, writer=writer)],
-        callbacks_epoch=[partial(callback_epoch_save, lr=learning_rate, batch_size=batch_size, writer=writer)]
-    )
-
-    plot_accuracy(list_train_acc, list_test_acc)
-    writer.close()
+    with mlflow.start_run():
+        # Train Network (with tensorboard)
+        list_train_acc, list_test_acc = train(
+            model=model,
+            train_loader=train_loader,
+            test_loader=test_loader,
+            val_loader=val_loader,
+            num_epochs=num_epochs,
+            metrics=metrics,
+            criterion=criterion,
+            optimizer=optimizer,
+        )

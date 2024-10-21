@@ -3,6 +3,7 @@ import statistics
 from typing import Callable, List
 
 import matplotlib.pyplot as plt
+import mlflow
 import numpy as np
 import torch
 import torch.nn as nn
@@ -117,8 +118,6 @@ def train(
         metrics: Metric,
         criterion: nn.Module,
         optimizer: optim.Optimizer,
-        callbacks_batch: List[Callable] = None,
-        callbacks_epoch: List[Callable] = None,
 ):
     """
     Complete function to train a model
@@ -132,8 +131,6 @@ def train(
         metrics (Metric): Metric to use for accuracy
         criterion (nn.Module): Loss function
         optimizer (optim.Optimizer): Optimizer to use for training
-        callbacks_batch (List[Callable]): List of callbacks to run after each batch
-        callbacks_epoch (List[Callable]): List of callbacks to run after each epoch
 
     Returns:
         float: Accuracy of the model on the test data
@@ -141,6 +138,12 @@ def train(
     batch_size = train_loader.batch_size
     run_train_acc = []
     run_test_acc = []
+
+    # Log hyperparameters using MLflow
+    mlflow.log_params({
+        "lr": optimizer.param_groups[0]['lr'],
+        "batch_size": batch_size,
+    })
 
     # Get device of model
     device = next(model.parameters()).device
@@ -180,14 +183,9 @@ def train(
                 # Rescale step (not same with batch_size) like min batch_size is 256
                 step = batch_size // 256 * step
 
-                # Run callbacks
-                if callbacks_batch:
-                    for callback in callbacks_batch:
-                        callback(
-                            acc=acc,
-                            loss=loss,
-                            step=step,
-                        )
+                # Log metrics for each batch
+                mlflow.log_metric('batch_acc', acc.item(), step=step)
+                mlflow.log_metric('batch_loss', loss.item(), step=step)
 
                 pbar.set_postfix(acc=acc.item(), loss=loss.item(), step=step)
 
@@ -198,16 +196,6 @@ def train(
 
             # Update progress bar
             pbar.write(f"Epoch {epoch}, Train: {epoch_train_acc * 100:.2f}%, Test: {epoch_test_acc * 100:.2f}%")
-
-            # Run callbacks
-            if callbacks_epoch:
-                for callback in callbacks_epoch:
-                    callback(
-                        epoch=epoch,
-                        epoch_train_acc=epoch_train_acc,
-                        epoch_test_acc=epoch_test_acc,
-                        epoch_loss=epoch_loss,
-                    )
 
             # Save accuracy for each epoch
             run_train_acc.append(epoch_train_acc)
